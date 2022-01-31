@@ -21,7 +21,8 @@ class DazRigBlend:
     bone_head_tail_dict = dict()
     bone_limits = dict()
     skeleton_data_dict = dict()
-
+    non_interactive_mode = 0
+    
     def __init__(self, dtu):
         self.head_vgroup_index = -1
         self.notEnglish = False
@@ -496,8 +497,9 @@ class DazRigBlend:
             Global.deselect()
         Versions.active_object_none()
         Global.change_size(Global.getAmtr())
-        if bpy.context.window_manager.update_viewport:
-            Global.scale_settings()
+        if self.non_interactive_mode == 0:        
+            if bpy.context.window_manager.update_viewport:
+                Global.scale_settings()
         Versions.select(Global.getAmtr(), True)
         Versions.active_object(Global.getAmtr())
         Global.setOpsMode("POSE")
