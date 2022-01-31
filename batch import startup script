@@ -1,0 +1,14 @@
+import bpy
+import DTB.DtbOperators
+
+# edit next line to set location of import list - currently only supports one file
+file_a = open('C:/Users/[username]/Documents/[file name]')
+
+DTB.DtbOperators.IMP_OT_FBX.non_interactive_mode = 1
+DTB.DazRigBlend.DazRigBlend.non_interactive_mode = 1
+
+DTB.DtbOperators.IMP_OT_FBX.non_interactive_mode_address = file_a.readline()
+
+bpy.ops.import_dtb.fbx()
+
+file_a.close()
