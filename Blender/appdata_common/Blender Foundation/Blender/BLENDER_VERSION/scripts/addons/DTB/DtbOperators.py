@@ -157,11 +157,13 @@ class RENAME_MORPHS(bpy.types.Operator):
 class IMP_OT_FBX(bpy.types.Operator):
     """Supports Genesis 3, 8, and 8.1"""
 
-    bl_idname = "import.fbx"
+    bl_idname = "import_dtb.fbx"
     bl_label = "Import New Genesis Figure"
     bl_options = {"REGISTER", "UNDO"}
     root = Global.getRootPath()
-
+    non_interactive_mode = 0
+    non_interactive_mode_address = ""   
+    
     def invoke(self, context, event):
         if bpy.data.is_dirty:
             return context.window_manager.invoke_confirm(self, event)
@@ -169,7 +171,8 @@ class IMP_OT_FBX(bpy.types.Operator):
 
     def finish_obj(self):
         Versions.reverse_language()
-        Versions.pivot_active_element_and_center_and_trnormal()
+        if self.non_interactive_mode_address == 0:        
+            Versions.pivot_active_element_and_center_and_trnormal()
         Global.setRenderSetting(True)
 
     def layGround(self):
@@ -329,24 +332,33 @@ class IMP_OT_FBX(bpy.types.Operator):
         DtbIKBones.ik_access_ban = False
 
     def execute(self, context):
-        if self.root == "":
-            self.report({"ERROR"}, "Appropriate FBX does not exist!")
-            return {"FINISHED"}
-        self.layGround()
+        if self.non_interactive_mode == 0:
+            if self.root == "":
+                self.report({"ERROR"}, "Appropriate FBX does not exist!")
+                return {"FINISHED"}
+            self.layGround()
+            
         current_dir = os.getcwd()
         if bpy.context.window_manager.use_custom_path:
             self.root = Global.get_custom_path()
             print(self.root)
 
         os.chdir(self.root)
-
-        for i in range(10):
-            fbx_adr = os.path.join(self.root, "FIG", "FIG" + str(i), "B_FIG.fbx")
-            if os.path.exists(fbx_adr) == False:
-                break
-            Global.setHomeTown(os.path.join(self.root, "FIG/FIG" + str(i)))
+        if self.non_interactive_mode == 0:
+            for i in range(10):
+                fbx_adr = os.path.join(self.root, "FIG", "FIG" + str(i), "B_FIG.fbx")
+                if os.path.exists(fbx_adr) == False:
+                    break
+                Global.setHomeTown(os.path.join(self.root, "FIG/FIG" + str(i)))
+                Global.load_asset_name()
+                self.import_one(fbx_adr)
+        else:              
+            fbx_adr = self.non_interactive_mode_address
+            fbx_adr_folder = fbx_adr[:fbx_adr.rfind('/')]
+            Global.setHomeTown(fbx_adr_folder)
             Global.load_asset_name()
-            self.import_one(fbx_adr)
+            self.import_one(fbx_adr)    
+            
         self.finish_obj()
         os.chdir(current_dir)
         return {"FINISHED"}
