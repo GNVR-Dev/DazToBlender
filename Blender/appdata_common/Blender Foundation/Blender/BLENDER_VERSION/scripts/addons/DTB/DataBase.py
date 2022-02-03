@@ -12,6 +12,7 @@ class DtuLoader:
     morph_links_dict = dict()
     asset_name = ""
     import_name = ""
+    fbx_path = ""
     materials_list = []
 
     def load_dtu(self):
@@ -45,6 +46,15 @@ class DtuLoader:
             self.load_import_name()
         return self.import_name
 
+    def load_fbx_path(self):
+        dtu_dict = self.get_dtu_dict()
+        self.import_name = dtu_dict["FBX File"]
+
+    def get_fbx_path(self):
+        if self.fbx_path == "":
+            self.load_fbx_path()
+        return self.fbx_path
+    
     def load_bone_head_tail_dict(self):
         dtu_dict = self.get_dtu_dict()
         self.bone_head_tail_dict = dtu_dict["HeadTailData"]
