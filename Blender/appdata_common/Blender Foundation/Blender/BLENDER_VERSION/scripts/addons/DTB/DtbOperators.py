@@ -192,7 +192,7 @@ class IMP_OT_FBX(bpy.types.Operator):
     def pbar(self, v, wm):
         wm.progress_update(v)
 
-    def import_one(self, fbx_adr):
+    def import_one(self, dtu_adr):
         Versions.active_object_none()
         Util.decideCurrentCollection("FIG")
         wm = bpy.context.window_manager
@@ -211,7 +211,7 @@ class IMP_OT_FBX(bpy.types.Operator):
         self.pbar(5, wm)
 
         anim.reset_total_key_count()
-        drb.convert_file(filepath=fbx_adr)
+        drb.convert_file(filepath=str(Global.fbx_path))
         self.pbar(10, wm)
         Global.load_dtu(dtu)
         Global.store_variables()
@@ -346,18 +346,19 @@ class IMP_OT_FBX(bpy.types.Operator):
         os.chdir(self.root)
         if self.non_interactive_mode == 0:
             for i in range(10):
+                dtu_adr = os.path.join(self.root, "FIG", "FIG" + str(i), "FIG.dtu")
                 fbx_adr = os.path.join(self.root, "FIG", "FIG" + str(i), "B_FIG.fbx")
-                if os.path.exists(fbx_adr) == False:
+                if os.path.exists(dtu_adr) == False:
                     break
                 Global.setHomeTown(os.path.join(self.root, "FIG/FIG" + str(i)))
-                Global.load_asset_name()
-                self.import_one(fbx_adr)
+                Global.fbx_path = fbx_adr 
+                self.import_one(dtu_adr)
         else:              
-            fbx_adr = self.non_interactive_mode_address
-            fbx_adr_folder = fbx_adr[:fbx_adr.rfind('/')]
-            Global.setHomeTown(fbx_adr_folder)
-            Global.load_asset_name()
-            self.import_one(fbx_adr)    
+            dtu_adr = self.non_interactive_mode_address
+            dtu_adr_folder = dtu_adr[:dtu_adr.rfind('/')]
+            Global.setHomeTown(dtu_adr_folder)
+            Global.load_fbx_path(dtu_adr)
+            self.import_one(dtu_adr)    
             
         self.finish_obj()
         os.chdir(current_dir)
