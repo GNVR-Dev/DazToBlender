@@ -32,6 +32,7 @@ config = ""
 _ISG3 = 0
 _HOMETOWN = ""
 _ASSETNAME = ""
+fbx_path = ""
 already_use_newmtl = []
 _ENVROOT = ""
 shape_key_custom_props = []
@@ -734,10 +735,17 @@ def load_asset_name():
     with open(dtu, "r") as file:
         _ASSETNAME = json.load(file)["Asset Name"]
 
-
+def load_fbx_path(dtu_adr):
+    global fbx_path
+    dtu = dtu_adr
+    with open(dtu, "r") as file:
+        fbx_path = json.load(file)["FBX File"]
+        
 def get_asset_name():
     return _ASSETNAME
 
+def get_fbx_path():
+    return fbx_path
 
 def clear_already_use_newmtl():
     global already_use_newmtl
