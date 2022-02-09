@@ -1,17 +1,38 @@
 import bpy
+import os
+import json
 import DTB.DtbOperators
+import DTB.DataBase
 
-# edit next line to set location of import list - currently only supports one .dtu file
-file_a = open('C:/Users/[username]/Documents/[file name]')
-
+dtu = DTB.DataBase.DtuLoader()
 DTB.DtbOperators.IMP_OT_FBX.non_interactive_mode = 1
 DTB.DazRigBlend.DazRigBlend.non_interactive_mode = 1
 
-address = file_a.readline()
-print (str(address))
+# edit next line to set location of import list - currently only supports one .dtu file
+with open('C:/Users/darre/Documents/Daz_Import_Json_List.txt','r') as data:
 
-DTB.DtbOperators.IMP_OT_FBX.non_interactive_mode_address = (str(address))
+    dtu_dict = json.load(data)
+    
+    for import_files in dtu_dict['import_files']:
+        DTU_File = import_files['DTU_File']
+        output_path = import_files['Output path']
+        blend_file_name = import_files['.blend_file_name']   
+        print (DTU_File)
+        print (output_path)
+        print (blend_file_name)        
 
-bpy.ops.import_dtb.fbx()
+        DTB.DtbOperators.IMP_OT_FBX.non_interactive_mode_address = (DTU_File)
 
-file_a.close()
+        outputfile = os.path.join(output_path, blend_file_name+".blend")
+
+        bpy.ops.import_dtb.fbx()
+
+        asset_name = dtu.get_asset_name()
+
+        print (str(asset_name))
+
+        bpy.ops.wm.save_as_mainfile(filepath=outputfile)
+
+        bpy.ops.wm.read_homefile(app_template="")
+
+data.close()
