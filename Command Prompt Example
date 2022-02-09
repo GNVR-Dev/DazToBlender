@@ -1,0 +1,8 @@
+# Edit the script below so that it points to the startup script you want to run
+
+blender.exe --background --python "C:\Users\[username]\Documents\Daz_Import_Json_List.txt"
+
+# Once you edited the script above, copy it
+# Open a command pronpt
+# Paste the script
+# hit enter
