@@ -1,0 +1,13 @@
+{
+"import_files":[
+	{   	
+	"DTU_File":"C:/Users/[username]/Documents/DAZ 3D/Bridges/Daz To Blender/Exports/FIG/FIG0/FIG.dtu",
+	".blend_file_name" : "test1",
+	"Output path" : "C:/Users/[username]/Documents/DAZ 3D/Bridges/Daz To Blender/Exports/FIG/FIG0/"
+	},
+	{
+	"DTU_File":"C:/Users/[username]/Documents/DAZ 3D/Bridges/Daz To Blender/Exports/FIG/FIG0/FIG.dtu",
+	".blend_file_name" : "test2",
+	"Output path" : "C:/Users/[username]/Documents/DAZ 3D/Bridges/Daz To Blender/Exports/FIG/FIG0/"
+	}]
+}
