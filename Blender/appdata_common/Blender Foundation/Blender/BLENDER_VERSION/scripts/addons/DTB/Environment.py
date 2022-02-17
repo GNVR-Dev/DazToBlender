@@ -9,8 +9,20 @@ from . import DtbMaterial
 from . import NodeArrange
 from . import Poses
 from . import DataBase
-import re
+from . import DazRigBlend
+from . import Animations
+from . import DtbShapeKeys
+from . import DtbIKBones
 
+import re
+from bpy.props import EnumProperty
+
+#default to "" - will be set by operator or automation 
+#folder_path = ""
+dtu_address = ""
+dtu = DataBase.DtuLoader()
+
+file_name = ""
 
 def set_transform(obj,data,type):
     if type == "scale":
@@ -26,116 +38,314 @@ def set_transform(obj,data,type):
 def progress_bar(percent):
     bpy.context.window_manager.progress_update(percent)
 
+    # Start of Utlity Classes
+def reload_dropdowns(version):
+    if version == "choose_daz_figure":
+        w_mgr = bpy.types.WindowManager
+        prop = Versions.get_properties(w_mgr.choose_daz_figure)
+        for arm in Util.all_armature():
+            check = [x for x in prop["items"] if x[0] == arm.name]
+            if len(check) == 0:
+                if "Asset Name" in arm.keys():
+                    prop["items"].append(
+                        (arm.name, arm["Asset Name"], arm["Collection"])
+                    )
+        w_mgr.choose_daz_figure = EnumProperty(
+            name=prop["name"],
+            description=prop["description"],
+            items=prop["items"],
+            default=Global.get_Amtr_name(),
+            )
 
-class EnvProp:
-    env_root = os.path.join(Global.getRootPath(), "ENV")
-    if bpy.context.window_manager.use_custom_path:
-        env_root = os.path.join(Global.get_custom_path() , "ENV")
+class Import_Models():
 
     def __init__(self):
         Util.deleteEmptyDazCollection() # Remove Empty Collections
+        folder_path = ""
         self.execute()
 
     def execute(self):
+
         wm = bpy.context.window_manager
         wm.progress_begin(0, 100)
         Versions.active_object_none() # deselect all
-        self.set_default_settings()
-        if os.path.exists(self.env_root)==False:
-            return
-        current_dir = os.getcwd()
-        os.chdir(self.env_root)
+
+        Global.dtu_address = dtu_address.replace("/", "\\")
+        self.find_fbx_from_dtu_file(dtu_address,0)
+
         progress_bar(0)
-        env_dirs = os.listdir(self.env_root)
-        env_dirs = [f for f in env_dirs if os.path.isdir(os.path.join(self.env_root, f))]
-        int_progress = 100/len(env_dirs)
-        for i in range(len(env_dirs)):
+        dirs = os.listdir(Global.folder_path)
+
+        import_dirs = [f for f in dirs if os.path.isdir(os.path.join(Global.folder_path, f))]
+        for j in range(len(import_dirs)):
+            print ("length of file =", str(j))
+        int_progress = 100/len(dirs)
+            
+        for i in range(len(import_dirs)):
+            if i > 0:
+                new_dtu_address = os.path.join(Global.folder_path,Global.import_type+str(i))
+                for file in os.listdir(new_dtu_address):
+                    if file.endswith(".dtu"):
+                        new_dtu_address = os.path.join(Global.folder_path,Global.import_type+str(i), file)
+                    break
+                print ("i equals ",i)
+                self.find_fbx_from_dtu_file(new_dtu_address,i)
             Global.clear_variables()
-            Global.setHomeTown(os.path.join(
-                                self.env_root, "ENV" + str(i)
-                                ))
-            Global.load_asset_name()
-            Util.decideCurrentCollection('ENV')
+            Global.fbx_address=(os.path.join(Global.folder_path,Global.import_type+str(i),Global.file_name))
+            print ("new global fbx address =",Global.fbx_address) 
+            Util.decideCurrentCollection(Global.import_type)
             progress_bar(int(int_progress * i) + 5)
-            ReadFbx(os.path.join(self.env_root, 'ENV' + str(i)), i, int_progress)
+            ReadFbx( i, int_progress)
             Versions.active_object_none()
         progress_bar(100)
         Global.setOpsMode("OBJECT")
         wm.progress_end()
         Versions.make_sun()
-        os.chdir(current_dir)
+        if Global.non_interactive_mode == False:
+            Global.scale_settings()
         return {"FINISHED"}
 
     def set_default_settings(self):
-        bpy.context.scene.render.engine = 'CYCLES'
-        bpy.context.space_data.shading.type = 'SOLID'
-        bpy.context.space_data.shading.color_type = 'OBJECT'
-        bpy.context.space_data.shading.show_shadows = False
+        if bpy.context.window_manager.update_scn_settings:
+            bpy.context.preferences.inputs.use_mouse_depth_navigate = True
+            bpy.context.scene.render.engine = 'CYCLES'
+            bpy.context.space_data.shading.type = 'SOLID'
+            bpy.context.space_data.shading.color_type = 'OBJECT'
+            bpy.context.space_data.shading.show_shadows = False
         bco = bpy.context.object
         if bco != None and bco.mode != 'OBJECT':
             Global.setOpsMode('OBJECT')
         bpy.ops.view3d.snap_cursor_to_center()
+
+    def find_fbx_from_dtu_file(self,new_dtu_address, idx):
+
+        new_dtu_address = new_dtu_address.replace("/", "\\")
+
+        if new_dtu_address.endswith(".dtu"):
+            print ("dtu address is ", new_dtu_address)
+            dtu.load_dtu
+
+            # get asset type from dtu file
+            asset_type = dtu.get_asset_type()
+            if asset_type == 'Actor/Character':
+                Global.import_type = "FIG"               
+            elif asset_type == 'Set':
+                Global.import_type = "ENV"
+            else:           
+                print ("didn't recongnize asset type ",Global.import_type)
+                return
+
+            fbx_path = dtu.get_fbx_path() # get fbx_file from .dtu file
+            print ("fbx path=",fbx_path)
+            placeholder = ('\\'+Global.import_type+str(idx)+'\\')
+            print ("placeholder=",placeholder)
+            Global.folder_path = os.path.join(new_dtu_address[:new_dtu_address.rfind(str(placeholder))])
+            print ("Global folder path is ", Global.folder_path)
+            Global.file_name = os.path.basename(fbx_path)
+            print ("Global file name is ", Global.file_name)
+ 
+        else:
+            print ("Please use .dtu file for import")
+            return
 
 class ReadFbx:
     adr = ""
     index = 0
     my_meshs = []
 
-    def __init__(self,dir,i,int_progress):
+
+    def __init__(self,i,int_progress):
         self.dtu = DataBase.DtuLoader()
+        self.drb = DazRigBlend.DazRigBlend(self.dtu)
         self.pose = Poses.Posing(self.dtu)
         self.dtb_shaders = DtbMaterial.DtbShaders(self.dtu)
-        self.adr = dir
+        self.anim = Animations.Animations(self.dtu)
+        self.db = DataBase.DB()
         self.my_meshs = []
-        self.index = i
+        self.index = i 
+        self.dsk = DtbShapeKeys.DtbShapeKeys(False, self.dtu)
         if self.read_fbx():
             progress_bar(int(i * int_progress)+int(int_progress / 2))
             self.setMaterial()
-        Global.scale_settings()
+
+    def pbar(self, v, wm):
+        wm.progress_update(v)
 
     def read_fbx(self):
         self.my_meshs = []
-        adr = os.path.join(self.adr, "B_ENV.fbx")
-        if os.path.exists(adr) == False:
+        adr = Global.fbx_address 
+        if os.path.exists(Global.fbx_address) == False:
             return
-        objs = self.convert_file(adr)
+        objs = self.convert_file(Global.fbx_address)
+        print (str(len(objs)))
         for obj in objs:
             if obj.type == 'MESH':
                 self.my_meshs.append(obj)
         if objs is None or len(objs) == 0:
             return
-        Global.find_ENVROOT(objs[0])
-        root = Global.getEnvRoot()
-        if len(objs) > 1:
-            if root is None:
-                return
+
+        # Model imported - Now finalize
+        if Global.import_type == "ENV": #Finalize Environment import
+            Global.find_ENVROOT(objs[0])
+            root = Global.getEnvRoot()
+            if len(objs) > 1:
+                if root is None:
+                    return
+                else:
+                    objs.remove(root)
             else:
-                objs.remove(root)
-        else:
-            root = objs[0]
+                root = objs[0]
         # Temporaily Delete Animation Until Support is Added
-        root.animation_data_clear()
-        for obj in objs:
-            obj.animation_data_clear()
-        Versions.active_object(root)
-        Global.deselect()
-        if root.type == 'ARMATURE':
-            self.import_as_armature(objs, root)
-        #TODO: Remove Groups with no MESH   
-        elif root.type == 'EMPTY':
-            no_empty = False
-            for o in objs:
-                if o.type != 'EMPTY':
-                    no_empty = True
-                    break
-            if no_empty == False:
+            root.animation_data_clear()
+            for obj in objs:
+                obj.animation_data_clear()
+            Versions.active_object(root)
+
+            Global.deselect()
+            if root.type == 'ARMATURE':
+                self.import_as_armature(objs, root)
+            #TODO: Remove Groups with no MESH   
+            elif root.type == 'EMPTY':
+                no_empty = False
                 for o in objs:
-                    bpy.data.objects.remove(o)
-                return False
-            else:
-                self.import_empty(objs, Global.getEnvRoot())
-        Global.change_size(Global.getEnvRoot())
+                    if o.type != 'EMPTY':
+                        no_empty = True
+                        break
+                if no_empty == False:
+                    for o in objs:
+                        bpy.data.objects.remove(o)
+                    return False
+                else:
+                    self.import_empty(objs, Global.getEnvRoot())
+            Global.change_size(Global.getEnvRoot())
         
+        else: #Finalize figure import
+
+            Util.decideCurrentCollection("FIG")
+            wm = bpy.context.window_manager
+            wm.progress_begin(0, 100)
+            Global.clear_variables()
+            DtbIKBones.ik_access_ban = True
+
+            self.anim.reset_total_key_count()
+            self.pbar(10, wm)            
+            Global.load_dtu(self.dtu)
+            Global.store_variables()
+            self.pbar(15, wm)
+            if Global.getAmtr() is not None and Global.getBody() is not None:
+
+                # Set Custom Properties
+                Global.getAmtr()["Asset Name"] = self.dtu.get_asset_name()
+                Global.getAmtr()["Collection"] = Util.cur_col_name()
+                reload_dropdowns("choose_daz_figure")
+                self.pose.add_skeleton_data()
+
+                Global.deselect()  # deselect all the objects
+                self.pose.clear_pose()  # Select Armature and clear transform
+                self.drb.mub_ary_A()  # Find and read FIG.dat file
+                self.drb.orthopedy_empty()  # On "EMPTY" type objects
+                self.pbar(18, wm)
+                self.drb.orthopedy_everything()  # clear transform, clear and reapply parent, CMs -> METERS
+                Global.deselect()
+                self.pbar(20, wm)
+                self.drb.set_bone_head_tail()  # Sets head and tail positions for all the bones
+                Global.deselect()
+                self.pbar(25, wm)
+                self.drb.bone_limit_modify()
+                if self.anim.has_keyframe(Global.getAmtr()):
+                    self.anim.clean_animations()
+                Global.deselect()
+                self.pbar(30, wm)
+                self.drb.unwrapuv()
+                Global.deselect()
+
+                # materials
+                self.dtb_shaders.make_dct()
+                self.dtb_shaders.load_shader_nodes()
+                body = Global.getBody()
+                self.dtb_shaders.setup_materials(body)
+                self.pbar(35, wm)
+
+                fig_objs_names = [Global.get_Body_name()]
+                for obj in Util.myacobjs():
+                    # Skip for any of the following cases
+                    case1 = not Global.isRiggedObject(obj)
+                    case2 = obj.name in fig_objs_names
+                    if case1 or case2:
+                        continue
+                    self.dtb_shaders.setup_materials(obj)
+
+                self.pbar(40, wm)
+
+                if Global.getIsGen():
+                    drb.fixGeniWeight(db)
+                Global.deselect()
+                self.pbar(45, wm)
+                Global.setOpsMode("OBJECT")
+                Global.deselect()
+
+                # Shape keys
+                self.dsk.make_drivers()
+                Global.deselect()
+                self.pbar(60, wm)
+
+                self.drb.makeRoot()
+                self.drb.makePole()
+                self.drb.makeIK()
+                self.drb.pbone_limit()
+                self.drb.mub_ary_Z()
+                self.pbar(70, wm)
+                Global.setOpsMode("OBJECT")
+                try:
+                    CustomBones.CBones()
+                except:
+                    print("Custom bones currently not supported for this character")
+                self.pbar(80, wm)
+                Global.setOpsMode("OBJECT")
+                Global.deselect()
+                self.pbar(90, wm)
+                amt = Global.getAmtr()
+                for bname in DtbIKBones.bone_name:
+                    if bname in amt.pose.bones.keys():
+                        bone = amt.pose.bones[bname]
+                        for bc in bone.constraints:
+                            if bc.name == bname + "_IK":
+                                pbik = amt.pose.bones.get(bname + "_IK")
+                                amt.pose.bones[bname].constraints[
+                                    bname + "_IK"
+                                ].influence = 0
+                self.drb.makeBRotationCut(self.db)  # lock movements around axes with zeroed limits for each bone
+                Global.deselect()
+
+                # materials
+                DtbMaterial.forbitMinus()
+                self.pbar(95, wm)
+                Global.deselect()
+
+                Versions.active_object(Global.getAmtr())
+                Global.setOpsMode("POSE")
+                self.drb.mub_ary_Z()
+                Global.setOpsMode("OBJECT")
+                self.drb.finishjob()
+                Global.setOpsMode("OBJECT")
+                if not self.anim.has_keyframe(Global.getAmtr()):
+                    self.pose.update_scale()
+                    self.pose.restore_pose()  # Run when no animation exists.
+                DtbIKBones.bone_disp(-1, True)
+                DtbIKBones.set_scene_settings(self.anim.total_key_count)
+                self.pbar(100, wm)
+                DtbIKBones.ik_access_ban = False
+                if bpy.context.window_manager.morph_prefix:
+                    bpy.ops.rename.morphs('EXEC_DEFAULT')
+                #self.report({"INFO"}, "Success")
+                print ("Success")
+            else:
+                #self.show_error()
+                print ("Failed")
+
+            wm.progress_end()
+            DtbIKBones.ik_access_ban = False
+
         return True
         
     
@@ -149,6 +359,7 @@ class ReadFbx:
                 bpy.ops.import_scene.fbx(
                     filepath = filepath,
                     use_manual_orientation = False,
+                    #global_scale = 1,
                     bake_space_transform = False,
                     use_image_search = True,
                     use_anim = True,
@@ -317,6 +528,8 @@ class ReadFbx:
         self.dtb_shaders.load_shader_nodes()
         for mesh in self.my_meshs:
             self.dtb_shaders.setup_materials(mesh)
+
+
             
 
 

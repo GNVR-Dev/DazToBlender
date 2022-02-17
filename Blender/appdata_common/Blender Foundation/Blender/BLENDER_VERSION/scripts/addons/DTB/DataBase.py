@@ -11,16 +11,24 @@ class DtuLoader:
     bone_head_tail_dict = dict()
     morph_links_dict = dict()
     asset_name = ""
+    asset_type = ""
     import_name = ""
     materials_list = []
+    fbx_path = ""
 
-    def load_dtu(self):
-        for file in os.listdir(Global.getHomeTown()):
-            if file.endswith(".dtu"):
-                dtu = os.path.join(Global.getHomeTown(), file)
-                break
+    def load_dtu(self): # load specific .dtu file
+        dtu = Global.dtu_address
         with open(dtu, "r") as data:
             self.dtu_dict = json.load(data)
+
+ #   Already searched folder for any dtu file in operators.py no need to look again - use direct path above
+ #   def load_dtu(self): #finds .dtu in folder
+ #       for file in os.listdir(Global.getHomeTown()):
+ #           if file.endswith(".dtu"):
+ #               dtu = os.path.join(Global.getHomeTown(), file)
+ #               break
+ #       with open(dtu, "r") as data:
+ #           self.dtu_dict = json.load(data)
 
     def get_dtu_dict(self):
         if len(self.dtu_dict.keys()) == 0:
@@ -36,6 +44,15 @@ class DtuLoader:
             self.load_asset_name()
         return self.asset_name
 
+    def load_asset_type(self):
+        dtu_dict = self.get_dtu_dict()
+        self.asset_type = dtu_dict["Asset Type"]
+
+    def get_asset_type(self):
+        if self.asset_type == "":
+            self.load_asset_type()
+        return self.asset_type
+
     def load_import_name(self):
         dtu_dict = self.get_dtu_dict()
         self.import_name = dtu_dict["Import Name"]
@@ -44,6 +61,15 @@ class DtuLoader:
         if self.import_name == "":
             self.load_import_name()
         return self.import_name
+
+    def load_fbx_path(self):
+        dtu_dict = self.get_dtu_dict()
+        self.fbx_path = dtu_dict["FBX File"]
+
+    def get_fbx_path(self):
+        if self.fbx_path == "":
+            self.load_fbx_path()
+        return self.fbx_path
 
     def load_bone_head_tail_dict(self):
         dtu_dict = self.get_dtu_dict()
