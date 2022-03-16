@@ -278,23 +278,34 @@ class DtbShaders:
 
     def optimize_materials(self, mat_slot):
         mat = mat_slot.material
-        if "Genesis" in mat["Asset Name"]:
-            mat_name = mat["Asset Label"] + "_" + mat["Material Name"]
-        else:
-            mat_name = mat["Asset Name"] + "_" + mat["Material Name"]
-        if mat_name not in bpy.data.materials:
-            if mat["Asset Name"] != mat["Asset Label"]:
-                mat.name = mat["Asset Name"] + "_" + mat["Material Name"]
-                return
-            else:
-                return
-
-        material = bpy.data.materials[mat_name]
-        if mat_name != mat.name:
-            if mat["Asset Name"] == material["Asset Name"]:
-                mat_slot.material = material
-                bpy.data.materials.remove(mat)
-                return True
+        #if "Genesis" in mat["Asset Name"]:
+        #    mat_name = mat["Asset Label"] + "_" + mat["Material Name"]
+        #else:
+        #    mat_name = mat["Asset Name"] + "_" + mat["Material Name"]
+        #if mat_name not in bpy.data.materials:
+        #    if mat["Asset Name"] != mat["Asset Label"]:
+        #        mat.name = mat["Asset Name"] + "_" + mat["Material Name"]
+        #        return
+        #    else:
+        #        return
+        mat_name = mat["Material Name"];
+        print ("Mat name is ", mat_name)
+        #material = bpy.data.materials[mat_name]
+        for key, data in bpy.data.materials.items():
+            if matName in key:
+                if mat["Asset Name"] == material["Asset Name"]:
+                    print("DEBUG: mat found: " + key);
+                    print("DEBUG: data= " + str(data));
+                    print("DEBUG: roughness= " + str(data.roughness));
+                    mat_slot.material = material
+                    bpy.data.materials.remove(mat)
+                    return True   
+                
+#        if mat_name != mat.name:
+#            if mat["Asset Name"] == material["Asset Name"]:
+#                mat_slot.material = material
+#                bpy.data.materials.remove(mat)
+#                return True
 
     # TODO: Check for all Color Maps
     def check_map_type(self, property_key):
@@ -358,7 +369,7 @@ class DtbShaders:
 
             obj_name = obj.name.replace(".Shape", "")
             obj_name = obj_name.split(".")[0]
-
+            print ("object name is ", obj_name)
             if mat is None:
                 # Get or create a new material when slot is missing material
                 mat = bpy.data.materials.get(mat_slot.name) or bpy.data.materials.new(

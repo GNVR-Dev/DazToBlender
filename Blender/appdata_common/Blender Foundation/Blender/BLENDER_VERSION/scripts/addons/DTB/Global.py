@@ -46,6 +46,7 @@ dtu_address = ""
 import_type = ""
 fbx_address = ""
 folder_path = ""
+asset_type = ""
 #####Female#######
 # 0.G8
 # 1.DazGenitalA (20200525-)

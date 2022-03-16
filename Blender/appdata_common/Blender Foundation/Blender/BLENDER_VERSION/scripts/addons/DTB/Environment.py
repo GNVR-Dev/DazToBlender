@@ -75,13 +75,15 @@ class Import_Models():
 
         progress_bar(0)
         dirs = os.listdir(Global.folder_path)
-
+        print ("got here")
+        
         import_dirs = [f for f in dirs if os.path.isdir(os.path.join(Global.folder_path, f))]
         for j in range(len(import_dirs)):
             print ("length of file =", str(j))
         int_progress = 100/len(dirs)
             
         for i in range(len(import_dirs)):
+            print ("made it here")
             if i > 0:
                 new_dtu_address = os.path.join(Global.folder_path,Global.import_type+str(i))
                 for file in os.listdir(new_dtu_address):
@@ -90,9 +92,10 @@ class Import_Models():
                     break
                 print ("i equals ",i)
                 self.find_fbx_from_dtu_file(new_dtu_address,i)
-            Global.clear_variables()
-            Global.fbx_address=(os.path.join(Global.folder_path,Global.import_type+str(i),Global.file_name))
-            print ("new global fbx address =",Global.fbx_address) 
+                Global.clear_variables()
+                if Global.non_interactive_mode == False:
+                    Global.fbx_address=(os.path.join(Global.folder_path,Global.import_type+str(i),Global.file_name))
+            print ("global fbx address =",Global.fbx_address) 
             Util.decideCurrentCollection(Global.import_type)
             progress_bar(int(int_progress * i) + 5)
             ReadFbx( i, int_progress)
@@ -120,33 +123,47 @@ class Import_Models():
     def find_fbx_from_dtu_file(self,new_dtu_address, idx):
 
         new_dtu_address = new_dtu_address.replace("/", "\\")
+        print ("New dtu address is", new_dtu_address)
 
         if new_dtu_address.endswith(".dtu"):
             print ("dtu address is ", new_dtu_address)
             dtu.load_dtu
 
+            fbx_path = dtu.get_fbx_path() # get fbx_file from .dtu file
+            fbx_path = fbx_path.replace("/", "\\")
+            fbx_path = fbx_path.rstrip()
+            print ("fbx path=",fbx_path)
+            if fbx_path == 'ENV/ENV0/B_ENV.fbx': 
+                folder_path = os.path.join(dtu_address[:dtu_address.rfind('\\ENV0\\')])
+                file_name = 'B_ENV.fbx'
+            elif fbx_path == 'FIG/FIG0/B_FIG.fbx':  # if the fbx path is the default /FIG/FIG0/B_FIG.fbx
+                folder_path = os.path.join(dtu_address[:dtu_address.rfind('\\FIG0\\')])
+                file_name = 'B_FIG.fbx'
+                print ("fbx address =",fbx_path)
+            else:           
+                Global.folder_path = os.path.join(fbx_path[:fbx_path.rfind('\\')])
+                Global.folder_path = os.path.join(Global.folder_path[:Global.folder_path.rfind('\\')])
+                print ("Global.folder_path = ",Global.folder_path)
+                Global.fbx_address = fbx_path
+
             # get asset type from dtu file
             asset_type = dtu.get_asset_type()
+            Global.asset_type = asset_type
+            print ("Asset_type is ",asset_type)
             if asset_type == 'Actor/Character':
                 Global.import_type = "FIG"               
             elif asset_type == 'Set':
                 Global.import_type = "ENV"
+            elif asset_type == 'SkeletalMesh':
+                print ("Skeletal Mesh is the import type")
+                Global.import_type = "FIG"
             else:           
                 print ("didn't recongnize asset type ",Global.import_type)
                 return
-
-            fbx_path = dtu.get_fbx_path() # get fbx_file from .dtu file
-            print ("fbx path=",fbx_path)
-            placeholder = ('\\'+Global.import_type+str(idx)+'\\')
-            print ("placeholder=",placeholder)
-            Global.folder_path = os.path.join(new_dtu_address[:new_dtu_address.rfind(str(placeholder))])
-            print ("Global folder path is ", Global.folder_path)
-            Global.file_name = os.path.basename(fbx_path)
-            print ("Global file name is ", Global.file_name)
- 
         else:
             print ("Please use .dtu file for import")
             return
+        print ("made it to return")
 
 class ReadFbx:
     adr = ""
@@ -156,14 +173,14 @@ class ReadFbx:
 
     def __init__(self,i,int_progress):
         self.dtu = DataBase.DtuLoader()
-        self.drb = DazRigBlend.DazRigBlend(self.dtu)
-        self.pose = Poses.Posing(self.dtu)
+        #self.drb = DazRigBlend.DazRigBlend(self.dtu)
+        #self.pose = Poses.Posing(self.dtu)
         self.dtb_shaders = DtbMaterial.DtbShaders(self.dtu)
-        self.anim = Animations.Animations(self.dtu)
+        #self.anim = Animations.Animations(self.dtu)
         self.db = DataBase.DB()
         self.my_meshs = []
         self.index = i 
-        self.dsk = DtbShapeKeys.DtbShapeKeys(False, self.dtu)
+        #self.dsk = DtbShapeKeys.DtbShapeKeys(False, self.dtu)
         if self.read_fbx():
             progress_bar(int(i * int_progress)+int(int_progress / 2))
             self.setMaterial()
@@ -227,7 +244,7 @@ class ReadFbx:
             Global.clear_variables()
             DtbIKBones.ik_access_ban = True
 
-            self.anim.reset_total_key_count()
+            #self.anim.reset_total_key_count()
             self.pbar(10, wm)            
             Global.load_dtu(self.dtu)
             Global.store_variables()
