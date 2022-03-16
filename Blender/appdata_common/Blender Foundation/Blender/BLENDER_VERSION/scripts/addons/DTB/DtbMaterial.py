@@ -277,6 +277,7 @@ class DtbShaders:
             return "DefaultMaterial"
 
     def optimize_materials(self, mat_slot):
+        print ("Entering optimize_materials")
         mat = mat_slot.material
         if "Genesis" in mat["Asset Name"]:
             mat_name = mat["Asset Label"] + "_" + mat["Material Name"]
@@ -351,14 +352,15 @@ class DtbShaders:
         return color_rgb
 
     def setup_materials(self, obj):
+        print ("made it to materials set up")
         for mat_slot in obj.material_slots:
 
             mat = mat_slot.material
             mat_name = mat.name
-
+            print ("setup_materials() mat_name is ", mat_name)
             obj_name = obj.name.replace(".Shape", "")
             obj_name = obj_name.split(".")[0]
-
+            print ("setup_materials() object name is ", obj_name)
             if mat is None:
                 # Get or create a new material when slot is missing material
                 mat = bpy.data.materials.get(mat_slot.name) or bpy.data.materials.new(
@@ -366,10 +368,13 @@ class DtbShaders:
                 )
                 mat_slot.material = mat
             if obj_name not in self.mat_data_dict.keys():
+                print ("obj_name not in self.mat_data_dict.keys")
                 continue
             if mat_name not in self.mat_data_dict[obj_name].keys():
+                print ("mat_name not in self.mat_data_dict.obj_name.keys")
                 mat_name = mat.name.split(".")[0]
                 if mat_name not in self.mat_data_dict[obj_name].keys():
+                    print ("mat_name not in self.mat_data_dict.obj_name.keys even without . or 0")
                     continue
 
             mat_data = self.mat_data_dict[obj_name][mat_name]
@@ -443,7 +448,9 @@ class DtbShaders:
                             shader_node.inputs[input_key].default_value = property_info
 
                         if property_type == "Texture":
+                            print ("SetupMaterials() #1 made it to texture")
                             if os.path.exists(property_info):
+                                print ("SetupMaterials() #2 made it past exists")
                                 self.check_map_type(property_key)
                                 tex_image_node = mat_nodes.new(
                                     type="ShaderNodeTexImage"

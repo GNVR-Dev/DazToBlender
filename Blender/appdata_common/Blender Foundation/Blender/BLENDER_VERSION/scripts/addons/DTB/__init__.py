@@ -269,7 +269,7 @@ classes = (
     DtbPanels.DTB_PT_MORE_INFO,
     DtbOperators.OP_SAVE_CONFIG,
     DtbOperators.IMP_OT_POSE,
-    DtbOperators.IMP_OT_FBX,
+    DtbOperators.IMP_OT_FIG,
     DtbOperators.IMP_OT_ENV,
     DtbOperators.CLEAR_OT_Pose,
     DtbOperators.REFRESH_DAZ_FIGURES,

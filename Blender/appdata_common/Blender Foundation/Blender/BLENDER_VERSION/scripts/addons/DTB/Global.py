@@ -37,6 +37,16 @@ _ENVROOT = ""
 shape_key_custom_props = []
 
 G3_GEOIDX = 3
+
+#import file global variables
+non_interactive_mode = True #starts true - using interface to import models sets it as false
+dtu_address = ""
+#file_name = ""
+#file_folder_name = ""
+import_type = ""
+fbx_address = ""
+folder_path = ""
+asset_type = ""
 #####Female#######
 # 0.G8
 # 1.DazGenitalA (20200525-)
